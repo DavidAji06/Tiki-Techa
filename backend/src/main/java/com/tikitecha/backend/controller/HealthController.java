@@ -1,4 +1,4 @@
-package com.tikitecha.controller;
+package com.tikitecha.backend.controller;
 
 import java.util.HashMap;
 import java.util.Map;
