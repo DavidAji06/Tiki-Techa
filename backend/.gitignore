@@ -33,5 +33,20 @@ out/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
+
+
+# Python
+data-pipeline/venv/
+__pycache__/
+*.pyc
+
+# Env secrets
+.env
+*.env.local
+
+# Java/Gradle build output
+backend/build/
+backend/.gradle/
+
+# IDE
 .vscode/
