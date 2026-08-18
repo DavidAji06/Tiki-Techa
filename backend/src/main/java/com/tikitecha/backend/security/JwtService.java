@@ -46,14 +46,15 @@ public class JwtService {
 
 // isTokenValid: parse token using the same secret key and checks if it is valid and not expired. If the token is valid, it returns true
     public boolean isTokenValid(String token) {
-        try {
-            Jwts.parser()
-                    .verifyWith(getSigningKey())
-                    .build()
-                    .parseSignedClaims(token); // throws if invalid/expired
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+    try {
+        Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token);
+        return true;
+    } catch (Exception e) {
+        System.out.println("JWT validation failed: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+        return false;
     }
+}
 }

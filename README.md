@@ -102,7 +102,7 @@ Visit `http://localhost:3000/players`.
 - [x] **Phase 1** — Infrastructure & pipe check (Docker, Spring Boot, Next.js talking to each other)
 - [x] **Phase 2** — Auth & user persistence (JWT, BCrypt, Spring Security)
 - [x] **Phase 3** — Core data ingestion & read-only player view
-- [ ] **Phase 4** — Squad builder & financial ledger (BigDecimal precision, transactional locking, positional validation)
+- [x] **Phase 4** — Squad builder & financial ledger (BigDecimal precision, transactional locking, positional validation)
 - [ ] **Phase 5** — Match simulation engine v1
 - [ ] **Phase 6** — AI valuation model & heuristic AI manager
 - [ ] **Phase 7** — Web usability & UI polish pass
