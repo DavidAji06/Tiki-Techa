@@ -134,4 +134,51 @@ public class TransferService {
         transaction.setPrice(sellPrice);
         transactionRepository.save(transaction);
     }
+
+    @Transactional
+    public void setLineup(Long userId, List<Integer> startingPlayerIds) {
+        Squad squad = squadRepository.findByUserId(userId);
+        if (squad == null) {
+            throw new IllegalStateException("No squad found for this user");
+        }
+
+        if (startingPlayerIds.size() != 11) {
+            throw new IllegalStateException("Starting XI must contain exactly 11 players");
+        }
+
+        List<SquadPlayer> allSquadPlayers = squadPlayerRepository.findBySquadId(squad.getId());
+
+        // validate every submitted ID actually belongs to this squad
+        List<SquadPlayer> startingPlayers = allSquadPlayers.stream()
+                .filter(sp -> startingPlayerIds.contains(sp.getPlayer().getId()))
+                .toList();
+
+        if (startingPlayers.size() != startingPlayerIds.size()) {
+            throw new IllegalArgumentException("One or more selected players are not in this squad");
+        }
+
+        long gkCount = startingPlayers.stream().filter(sp -> sp.getPlayer().getPositionId() == 1).count();
+        long defCount = startingPlayers.stream().filter(sp -> sp.getPlayer().getPositionId() == 2).count();
+        long midCount = startingPlayers.stream().filter(sp -> sp.getPlayer().getPositionId() == 3).count();
+        long fwdCount = startingPlayers.stream().filter(sp -> sp.getPlayer().getPositionId() == 4).count();
+
+        if (gkCount != 1) {
+            throw new IllegalStateException("Starting XI must contain exactly 1 goalkeeper");
+        }
+        if (defCount < 3 || defCount > 5) {
+            throw new IllegalStateException("Starting XI must contain between 3 and 5 defenders");
+        }
+        if (midCount < 2 || midCount > 5) {
+            throw new IllegalStateException("Starting XI must contain between 2 and 5 midfielders");
+        }
+        if (fwdCount < 1 || fwdCount > 3) {
+            throw new IllegalStateException("Starting XI must contain between 1 and 3 forwards");
+        }
+
+        // apply: starting for the chosen 11, bench for everyone else
+        for (SquadPlayer sp : allSquadPlayers) {
+            sp.setStarting(startingPlayerIds.contains(sp.getPlayer().getId()));
+            squadPlayerRepository.save(sp);
+        }
+    }
 }

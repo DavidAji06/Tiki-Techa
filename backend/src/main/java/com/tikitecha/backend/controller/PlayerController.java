@@ -26,10 +26,10 @@ public class PlayerController {
     }
 
     @GetMapping
-public List<Player> getPlayers(
-        @RequestParam(required = false) Integer positionId,
-        @RequestParam(required = false) Integer teamId,
-        @RequestParam(required = false) BigDecimal maxCost
+    public List<Player> getPlayers(
+            @RequestParam(required = false) Integer positionId,
+            @RequestParam(required = false) Integer teamId,
+            @RequestParam(required = false) BigDecimal maxCost
 ) {
     ArrayList<Specification<Player>> filters = new ArrayList<>();
 

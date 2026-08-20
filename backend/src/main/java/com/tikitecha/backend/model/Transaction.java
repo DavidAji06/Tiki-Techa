@@ -27,7 +27,7 @@ public class Transaction {
     private BigDecimal price;
 
     @Column(nullable = false)
-    private LocalDateTime timestamp = LocalDateTime.now();
+    final LocalDateTime timestamp = LocalDateTime.now();
 
     public Transaction() {}
 
