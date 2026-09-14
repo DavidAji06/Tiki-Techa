@@ -39,7 +39,6 @@ export default function SquadPage() {
       setSquadData(data);
       setNotFound(false);
 
-      // initialize checkbox selection from the currently saved starting XI
       const currentStarters = new Set(
         data.players.filter((p) => p.starting).map((p) => p.player.id)
       );
@@ -87,7 +86,7 @@ export default function SquadPage() {
         setSellStatus((prev) => ({ ...prev, [playerId]: message }));
         return;
       }
-      setSellStatus((prev) => ({ ...prev, [playerId]: "Sold!" }));
+      setSellStatus((prev) => ({ ...prev, [playerId]: "Sold" }));
       await fetchSquad();
     } catch {
       setSellStatus((prev) => ({ ...prev, [playerId]: "Something went wrong" }));
@@ -125,7 +124,7 @@ export default function SquadPage() {
         return;
       }
 
-      setLineupStatus("Lineup saved!");
+      setLineupStatus("Lineup saved");
       await fetchSquad();
     } catch {
       setLineupStatus("Something went wrong");
@@ -134,14 +133,17 @@ export default function SquadPage() {
     }
   }
 
-  if (loading) return <p>Loading squad...</p>;
-  if (error) return <p>Error: {error}</p>;
+  if (loading) return <p className="px-6 py-16 font-mono text-chalk-dim">Loading squad...</p>;
+  if (error) return <p className="px-6 py-16 font-mono text-card-red">Error: {error}</p>;
 
   if (notFound) {
     return (
-      <div>
-        <p>You don&apos;t have a squad yet.</p>
-        <button onClick={handleCreateSquad} disabled={creating}>
+      <div className="mx-auto max-w-5xl px-6 py-16">
+        <h1 className="font-display text-3xl font-bold tracking-wide text-chalk">My Squad</h1>
+        <p className="mt-3 font-mono text-sm text-chalk-dim">
+          No squad yet. Create one to start building your team.
+        </p>
+        <button onClick={handleCreateSquad} disabled={creating} className="mt-6">
           {creating ? "Creating..." : "Create Squad"}
         </button>
       </div>
@@ -151,23 +153,44 @@ export default function SquadPage() {
   if (!squadData) return null;
 
   const { squad, players } = squadData;
+  const selectionValid = selectedIds.size === 11;
 
   return (
-    <div>
-      <h1>My Squad</h1>
-      <p>Budget remaining: £{squad.budgetRemaining}m</p>
-      <p>{selectedIds.size}/11 selected for starting XI</p>
+    <div className="mx-auto max-w-5xl px-6 py-12">
+      <div className="flex items-baseline justify-between">
+        <h1 className="font-display text-3xl font-bold tracking-wide text-chalk">My Squad</h1>
+        <div className="text-right">
+          <div className="font-mono text-2xl text-pulse">£{squad.budgetRemaining}m</div>
+          <div className="font-mono text-xs text-chalk-dim">budget remaining</div>
+        </div>
+      </div>
 
-      <table>
+      <div className="mt-8 flex items-center justify-between">
+        <span
+          className={
+            selectionValid
+              ? "font-mono text-sm text-pulse"
+              : "font-mono text-sm text-chalk-dim"
+          }
+        >
+          {selectedIds.size} / 11 selected for starting XI
+        </span>
+        <button onClick={handleSaveLineup} disabled={!selectionValid || savingLineup}>
+          {savingLineup ? "Saving..." : "Save Lineup"}
+        </button>
+      </div>
+      {lineupStatus && <p className="mt-2 font-mono text-sm text-chalk-dim">{lineupStatus}</p>}
+
+      <table className="mt-6">
         <thead>
           <tr>
-            <th>Starting</th>
+            <th></th>
             <th>Name</th>
             <th>Team</th>
             <th>Position</th>
             <th>Purchase Price</th>
             <th>Status</th>
-            <th>Action</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -178,26 +201,37 @@ export default function SquadPage() {
                   type="checkbox"
                   checked={selectedIds.has(entry.player.id)}
                   onChange={() => toggleSelected(entry.player.id)}
+                  className="accent-pulse"
                 />
               </td>
-              <td>{entry.player.name}</td>
-              <td>{entry.player.team.name}</td>
-              <td>{getPositionLabel(entry.player.positionId)}</td>
-              <td>£{entry.purchasePrice}m</td>
-              <td>{entry.starting ? "Starting" : "Bench"}</td>
+              <td className="text-chalk">{entry.player.name}</td>
+              <td className="text-chalk-dim">{entry.player.team.name}</td>
               <td>
-                <button onClick={() => handleSell(entry.player.id)}>Sell</button>
-                {sellStatus[entry.player.id] && <span> {sellStatus[entry.player.id]}</span>}
+                <span className="border border-chalk-dim px-1.5 py-0.5 font-mono text-xs text-chalk-dim">
+                  {getPositionLabel(entry.player.positionId)}
+                </span>
+              </td>
+              <td className="font-mono text-chalk-dim">£{entry.purchasePrice}m</td>
+              <td className="font-mono text-xs text-chalk-dim">
+                {entry.starting ? "Starting" : "Bench"}
+              </td>
+              <td className="text-right">
+                <button
+                  onClick={() => handleSell(entry.player.id)}
+                  className="bg-transparent text-card-red border border-card-red px-3 py-1 text-xs hover:bg-card-red hover:text-pitch transition-colors"
+                >
+                  Sell
+                </button>
+                {sellStatus[entry.player.id] && (
+                  <span className="ml-2 font-mono text-xs text-chalk-dim">
+                    {sellStatus[entry.player.id]}
+                  </span>
+                )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-
-      <button onClick={handleSaveLineup} disabled={selectedIds.size !== 11 || savingLineup}>
-        {savingLineup ? "Saving..." : "Save Lineup"}
-      </button>
-      {lineupStatus && <p>{lineupStatus}</p>}
     </div>
   );
 }

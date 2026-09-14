@@ -1,26 +1,77 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-pitch: #0a140f;
+  --color-pitch-panel: #101f17;
+  --color-chalk: #edefef;
+  --color-chalk-dim: #7c9186;
+  --color-pulse: #2bc48a;
+  --color-card-red: #c1443c;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-pitch: var(--color-pitch);
+  --color-pitch-panel: var(--color-pitch-panel);
+  --color-chalk: var(--color-chalk);
+  --color-chalk-dim: var(--color-chalk-dim);
+  --color-pulse: var(--color-pulse);
+  --color-card-red: var(--color-card-red);
+  --font-display: var(--font-chakra-petch);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-pitch);
+  color: var(--color-chalk);
+  font-family: var(--font-sans), sans-serif;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: var(--color-chalk-dim);
+  border-bottom: 1px solid var(--color-pulse);
+  padding: 0.5rem 0.75rem;
+}
+
+td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(124, 145, 134, 0.15);
+  font-variant-numeric: tabular-nums;
+}
+
+tbody tr:nth-child(even) {
+  background: var(--color-pitch-panel);
+}
+
+input, select {
+  background: var(--color-pitch-panel);
+  color: var(--color-chalk);
+  border: 1px solid var(--color-chalk-dim);
+  padding: 0.4rem 0.6rem;
+  border-radius: 2px;
+  font-family: var(--font-sans), sans-serif;
+}
+
+button {
+  background: var(--color-pulse);
+  color: var(--color-pitch);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 2px;
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: var(--color-chalk-dim);
+  cursor: not-allowed;
 }

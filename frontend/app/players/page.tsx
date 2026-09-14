@@ -59,23 +59,25 @@ export default function PlayersPage() {
         return;
       }
 
-      setBuyStatus((prev) => ({ ...prev, [playerId]: "Bought!" }));
+      setBuyStatus((prev) => ({ ...prev, [playerId]: "Bought" }));
     } catch {
       setBuyStatus((prev) => ({ ...prev, [playerId]: "Something went wrong" }));
     }
   }
 
-  if (loading) return <p>Loading players...</p>;
-  if (error) return <p>Error: {error}</p>;
+  if (loading) return <p className="px-6 py-16 font-mono text-chalk-dim">Loading players...</p>;
+  if (error) return <p className="px-6 py-16 font-mono text-card-red">Error: {error}</p>;
 
   const totalPages = Math.ceil(players.length / PLAYERS_PER_PAGE);
   const startIndex = (currentPage - 1) * PLAYERS_PER_PAGE;
   const currentPlayers = players.slice(startIndex, startIndex + PLAYERS_PER_PAGE);
 
   return (
-    <div>
-      <h1>Players</h1>
-      <table>
+    <div className="mx-auto max-w-5xl px-6 py-12">
+      <h1 className="font-display text-3xl font-bold tracking-wide text-chalk">Players</h1>
+      <p className="mt-1 font-mono text-sm text-chalk-dim">{players.length} available</p>
+
+      <table className="mt-6">
         <thead>
           <tr>
             <th>Name</th>
@@ -83,34 +85,44 @@ export default function PlayersPage() {
             <th>Position</th>
             <th>Cost</th>
             <th>Points</th>
-            <th>Action</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           {currentPlayers.map((player) => (
             <tr key={player.id}>
-              <td>{player.name}</td>
-              <td>{player.team.name}</td>
-              <td>{getPositionLabel(player.positionId)}</td>
-              <td>£{player.nowCost}m</td>
-              <td>{player.totalPoints}</td>
+              <td className="text-chalk">{player.name}</td>
+              <td className="text-chalk-dim">{player.team.name}</td>
               <td>
-                <button onClick={() => handleBuy(player.id)}>Buy</button>
-                {buyStatus[player.id] && <span> {buyStatus[player.id]}</span>}
+                <span className="border border-chalk-dim px-1.5 py-0.5 font-mono text-xs text-chalk-dim">
+                  {getPositionLabel(player.positionId)}
+                </span>
+              </td>
+              <td className="font-mono text-pulse">£{player.nowCost}m</td>
+              <td className="font-mono text-chalk-dim">{player.totalPoints}</td>
+              <td className="text-right">
+                <button onClick={() => handleBuy(player.id)} className="text-xs">
+                  Buy
+                </button>
+                {buyStatus[player.id] && (
+                  <span className="ml-2 font-mono text-xs text-chalk-dim">{buyStatus[player.id]}</span>
+                )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <div>
+      <div className="mt-6 flex items-center gap-4">
         <button
           onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
           disabled={currentPage === 1}
         >
-          Previous
+          Prev
         </button>
-        <span> Page {currentPage} of {totalPages} </span>
+        <span className="font-mono text-sm text-chalk-dim">
+          Page {currentPage} / {totalPages}
+        </span>
         <button
           onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
           disabled={currentPage === totalPages}
