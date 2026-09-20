@@ -1,12 +1,21 @@
 package com.tikitecha.backend.service;
 
-import com.tikitecha.backend.model.*;
-import com.tikitecha.backend.repository.*;
+import java.util.List;
+import java.util.Random;
+import java.util.HashMap; import java.util.Map;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Random;
-import java.util.List;
+import com.tikitecha.backend.model.Match;
+import com.tikitecha.backend.model.MatchEvent;
+import com.tikitecha.backend.model.MatchEventType;
+import com.tikitecha.backend.model.Squad;
+import com.tikitecha.backend.model.SquadPlayer;
+import com.tikitecha.backend.repository.MatchEventRepository;
+import com.tikitecha.backend.repository.MatchRepository;
+import com.tikitecha.backend.repository.SquadPlayerRepository;
+import com.tikitecha.backend.repository.SquadRepository;
 
 @Service
 public class MatchService {
@@ -18,6 +27,9 @@ public class MatchService {
     private static final double MIN_RATING = 0.1;
     private static final Random random = new Random();
     private final SquadRepository squadRepository;
+    private record SimulatedScore(int homeGoals, int awayGoals) {}
+
+    private static final double TACTIC_MODIFIER = 1.15; // placeholder value, can be adjusted based on tactics in the future
 
     public MatchService(
             SquadPlayerRepository squadPlayerRepository,
@@ -30,6 +42,120 @@ public class MatchService {
         this.matchEventRepository = matchEventRepository;
         this.squadRepository = squadRepository;
     }
+
+    public Match simulateMatch(Long homeSquadId, Long awaySquadId) {
+    return runSimulation(homeSquadId, awaySquadId, 1.0, 1.0);
+}
+
+public Match simulateVsAi(Long userSquadId, Long aiSquadId) {
+    List<SquadPlayer> userStarters = squadPlayerRepository.findBySquadId(userSquadId).stream()
+            .filter(SquadPlayer::isStarting)
+            .toList();
+
+    double userAttack = calculateAttackRating(userStarters);
+    double userDefense = calculateDefenseRating(userStarters);
+
+    // the AI scouts the user's weaker side and adjusts its own tactic accordingly
+    double aiAttackModifier = 1.0;
+    double aiDefenseModifier = 1.0;
+
+    if (userDefense < userAttack) {
+        aiAttackModifier = TACTIC_MODIFIER; // exploit the weaker defense
+    } else {
+        aiDefenseModifier = TACTIC_MODIFIER; // opponent's attack is weaker — sit back
+    }
+
+    return runSimulation(aiSquadId, userSquadId, aiAttackModifier, aiDefenseModifier);
+}
+
+    @Transactional
+    private Match runSimulation(Long homeSquadId, Long awaySquadId, double homeAttackModifier, double homeDefenseModifier) {
+        Squad homeSquad = squadRepository.findById(homeSquadId)
+                .orElseThrow(() -> new IllegalArgumentException("Home squad not found"));
+        Squad awaySquad = squadRepository.findById(awaySquadId)
+                .orElseThrow(() -> new IllegalArgumentException("Away squad not found"));
+
+        List<SquadPlayer> homeStarters = squadPlayerRepository.findBySquadId(homeSquadId).stream()
+                .filter(SquadPlayer::isStarting).toList();
+        List<SquadPlayer> awayStarters = squadPlayerRepository.findBySquadId(awaySquadId).stream()
+                .filter(SquadPlayer::isStarting).toList();
+
+        SimulatedScore score = computeScore(homeSquadId, awaySquadId, homeAttackModifier, homeDefenseModifier);
+
+        Match match = new Match();
+        match.setHomeSquad(homeSquad);
+        match.setAwaySquad(awaySquad);
+        match.setHomeScore(score.homeGoals());
+        match.setAwayScore(score.awayGoals());
+        match.setPlayedAt(java.time.LocalDateTime.now());
+        matchRepository.save(match);
+
+        generateMatchEvents(match, score.homeGoals(), score.awayGoals(), homeStarters, awayStarters);
+
+        return match;
+    }
+
+    public Map<String, Object> benchmarkVsAi(Long userSquadId, Long aiSquadId, int runs) {
+        List<SquadPlayer> userStarters = squadPlayerRepository.findBySquadId(userSquadId).stream()
+                .filter(SquadPlayer::isStarting)
+                .toList();
+
+        double userAttack = calculateAttackRating(userStarters);
+        double userDefense = calculateDefenseRating(userStarters);
+
+        double aiAttackModifier = 1.0;
+        double aiDefenseModifier = 1.0;
+        if (userDefense < userAttack) {
+            aiAttackModifier = TACTIC_MODIFIER;
+        } else {
+            aiDefenseModifier = TACTIC_MODIFIER;
+        }
+
+        int aiWins = 0;
+        int draws = 0;
+        int userWins = 0;
+
+        for (int i = 0; i < runs; i++) {
+            SimulatedScore score = computeScore(aiSquadId, userSquadId, aiAttackModifier, aiDefenseModifier);
+            if (score.homeGoals() > score.awayGoals()) {
+                aiWins++;
+            } else if (score.homeGoals() < score.awayGoals()) {
+                userWins++;
+            } else {
+                draws++;
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("runs", runs);
+        result.put("aiWins", aiWins);
+        result.put("draws", draws);
+        result.put("userWins", userWins);
+        result.put("aiWinRate", (double) aiWins / runs);
+        return result;
+    }
+
+    
+
+    private SimulatedScore computeScore(Long homeSquadId, Long awaySquadId, double homeAttackModifier, double homeDefenseModifier) {
+        List<SquadPlayer> homeStarters = squadPlayerRepository.findBySquadId(homeSquadId).stream()
+                .filter(SquadPlayer::isStarting)
+                .toList();
+        List<SquadPlayer> awayStarters = squadPlayerRepository.findBySquadId(awaySquadId).stream()
+                .filter(SquadPlayer::isStarting)
+                .toList();
+
+        double homeAttack = calculateAttackRating(homeStarters) * homeAttackModifier;
+        double homeDefense = calculateDefenseRating(homeStarters) * homeDefenseModifier;
+        double awayAttack = calculateAttackRating(awayStarters);
+        double awayDefense = calculateDefenseRating(awayStarters);
+
+        double homeExpectedGoals = calculateExpectedGoals(homeAttack, awayDefense);
+        double awayExpectedGoals = calculateExpectedGoals(awayAttack, homeDefense);
+
+        return new SimulatedScore(samplePoissonGoals(homeExpectedGoals), samplePoissonGoals(awayExpectedGoals));
+    }
+
 
     private double calculateAttackRating(List<SquadPlayer> startingXI) {
     return startingXI.stream()
@@ -73,48 +199,6 @@ public class MatchService {
         } while (product > threshold);
 
         return goals - 1;
-    }
-
-    @Transactional
-    public Match simulateMatch(Long homeSquadId, Long awaySquadId) {
-        List<SquadPlayer> homeStarters = squadPlayerRepository.findBySquadId(homeSquadId).stream()
-                .filter(SquadPlayer::isStarting)
-                .toList();
-
-        List<SquadPlayer> awayStarters = squadPlayerRepository.findBySquadId(awaySquadId).stream()
-                .filter(SquadPlayer::isStarting)
-                .toList();
-
-        Squad homeSquad = squadRepository.findById(homeSquadId)
-        .orElseThrow(() -> new IllegalArgumentException("Home squad not found"));
-
-        Squad awaySquad = squadRepository.findById(awaySquadId)
-        .orElseThrow(() -> new IllegalArgumentException("Away squad not found"));
-
-
-        double homeAttack = calculateAttackRating(homeStarters);
-        double homeDefense = calculateDefenseRating(homeStarters);
-        double awayAttack = calculateAttackRating(awayStarters);
-        double awayDefense = calculateDefenseRating(awayStarters);
-
-        double homeExpectedGoals = calculateExpectedGoals(homeAttack, awayDefense);
-        double awayExpectedGoals = calculateExpectedGoals(awayAttack, homeDefense);
-
-        int homeGoals = samplePoissonGoals(homeExpectedGoals);
-        int awayGoals = samplePoissonGoals(awayExpectedGoals);
-
-        // build and save the Match itself
-        Match match = new Match();
-        match.setHomeSquad(homeSquad);
-        match.setAwaySquad(awaySquad);
-        match.setHomeScore(homeGoals);
-        match.setAwayScore(awayGoals);
-        match.setPlayedAt(java.time.LocalDateTime.now());
-        matchRepository.save(match);
-
-        generateMatchEvents(match, homeGoals, awayGoals, homeStarters, awayStarters);
-
-        return match;
     }
 
     private void generateMatchEvents(Match match, int homeGoals, int awayGoals, List<SquadPlayer> homeStarters, List<SquadPlayer> awayStarters) {

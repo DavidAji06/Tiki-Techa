@@ -1,7 +1,11 @@
 package com.tikitecha.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class BuyPlayerRequest {
     private Integer playerId;
+
+    @JsonProperty("isStarting")
     private boolean isStarting;
 
     public BuyPlayerRequest() {}
